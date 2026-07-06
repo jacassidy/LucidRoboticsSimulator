@@ -12,9 +12,12 @@ left, a terminal/scripting panel sits on the bottom, and users write control
 code that drives articulated CAD models using simulated sensors, motors, and
 physics.
 
-> **Status:** Scaffolding only. This repository is set up and ready for
-> implementation. Source files under `RoboticsSimWorkbench/` are stubs that
-> raise `NotImplementedError`. See [the build spec](#build-spec) below.
+> **Status:** Phase 1 implemented. The FreeCAD workbench under
+> `RoboticsSimWorkbench/` is functional: links, joints, sliders, scripting API,
+> telemetry + terminal panels, distance sensor, falling-block demo, and URDF/MJCF
+> export. A headless test suite (23 tests, no FreeCAD required) passes. See the
+> [workbench README](RoboticsSimWorkbench/README.md) and
+> [build spec](#build-spec).
 
 ---
 
@@ -30,9 +33,9 @@ if the workbench becomes limiting, a standalone app shell.
 
 ---
 
-## What it will do (Phase 1)
+## What it does (Phase 1)
 
-Once implemented, users will be able to:
+Users can:
 
 1. Select parts in FreeCAD and group them into named rigid **links**.
 2. Create **joints** (revolute / prismatic / fixed) between links.
@@ -68,8 +71,10 @@ LucidRoboticsSim/
       joint_model.py           Joint data model
       sensor_model.py          Sensor abstraction + DistanceSensor
       robot_api.py             Scripting API for control scripts
-      kinematics.py            Kinematic transform engine
+      kinematics.py            Kinematic transform engine (pure Python, no FreeCAD)
       simulation.py            Simple sim loop + demo physics + motor model
+      script_runner.py         Safe-ish exec of user control scripts
+      freecad_bridge.py        Transform<->Placement, geometry sync, runtime
       exporters/
         urdf_exporter.py       URDF export
         mjcf_exporter.py       MJCF (MuJoCo) export

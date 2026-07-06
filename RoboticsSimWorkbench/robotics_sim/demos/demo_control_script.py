@@ -1,8 +1,44 @@
-"""Example user control script run from the script panel.
+"""Example control script for the RoboticsSim script panel.
 
-STUB — scaffolding only. Not yet implemented.
-See repository README.md and the Phase 1 build prompt for required behavior.
+Paste this into the Run Script dialog (or Load File it) AFTER running the
+Falling Block demo so the ``block_distance`` sensor exists. The script runner
+injects a ``robot`` object into the namespace.
+
+You can also run this file directly in a headless Python to see the API in
+action (it builds the demo model itself in that case).
 """
 
-# TODO(Phase 1): implement per build spec. Do not add logic until implementing.
-raise NotImplementedError("RoboticsSimWorkbench: not yet implemented")
+# --- The snippet the workbench runs (robot is injected) --------------------
+CONTROL_SNIPPET = """
+for i in range(100):
+    robot.step(0.01)
+    height = robot.read_sensor("block_distance")
+    robot.log({
+        "time": robot.time,
+        "block_height": height,
+    })
+"""
+
+
+def _run_standalone():
+    """Headless demo of the same API, for `python demo_control_script.py`."""
+    from robotics_sim.demos.falling_block_demo import build_demo_model
+    from robotics_sim.robot_api import Robot
+    from robotics_sim.simulation import GravityBody
+
+    robot = Robot(build_demo_model())
+    GravityBody(robot, "block").attach()
+    for _ in range(100):
+        robot.step(0.01)
+        height = robot.read_sensor("block_distance")
+        robot.log({"time": round(robot.time, 3), "block_height": round(height, 2)})
+    print("Final height:", robot.read_sensor("block_distance"))
+
+
+if __name__ == "__main__":
+    import os
+    import sys
+
+    # Allow running from inside the package dir.
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    _run_standalone()

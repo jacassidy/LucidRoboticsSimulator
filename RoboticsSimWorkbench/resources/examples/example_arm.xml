@@ -1,0 +1,20 @@
+<mujoco model="example_arm">
+  <compiler angle="radian"/>
+  <option gravity="0 0 -9.81"/>
+  <asset>
+    <mesh name="Base" file="meshes/Base.stl"/>
+    <mesh name="Arm" file="meshes/Arm.stl"/>
+  </asset>
+  <worldbody>
+    <geom name="ground" type="plane" size="10 10 0.1" pos="0 0 0"/>
+    <body name="base" pos="0 0 0" euler="0 -0 0">
+      <inertial pos="0 0 0" mass="1" diaginertia="1 1 1"/>
+      <geom type="mesh" mesh="Base"/>
+      <body name="arm" pos="0 0 0.1" euler="0 -0 0">
+        <joint name="shoulder" type="hinge" axis="0 0 1" range="-1.57 1.57"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="1 1 1"/>
+        <geom type="mesh" mesh="Arm"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>
