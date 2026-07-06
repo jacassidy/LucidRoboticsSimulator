@@ -79,11 +79,16 @@ robot.command_motor("name", target_position=v)   # or target_velocity=v
 robot.time                                # current sim time (s)
 ```
 
-### 5. Run the falling-block demo
-**RoboticsSim → Run Demo** builds a ground plane + a block, treats the block as a
-link, attaches a `block_distance` sensor, and drops the block under gravity.
-Watch the telemetry (left) and terminal (bottom) update. After it runs you can
-open **Run Script** and run the example to keep driving the same block.
+### 5. Run the falling-block scene
+**RoboticsSim → Simulation Controls** (opened automatically with the workbench)
+builds the scene from `demos/scene_template.py`: a ground plane + a block, the
+block as a link with a `block_distance` sensor, dropped under gravity. Use
+**Play / Pause**, the **Speed (dt)** slider, and **Reset**; **Log to File…** tees
+telemetry to disk. Watch the telemetry (left) and terminal (bottom) update live.
+
+To simulate your own model, edit the four labelled builders at the top of
+`demos/scene_template.py` (geometry → links/sensors → physics → assemble), then
+press Play again — the toolbar command rebuilds the scene from that file.
 
 ### 6. Export URDF / MJCF
 **RoboticsSim → Export URDF** or **Export MJCF**, choose a path. Example outputs
@@ -105,8 +110,9 @@ robotics_sim/
   commands.py         # FreeCAD GUI command classes
   workbench.py        # Gui.Workbench definition
   exporters/          # urdf_exporter.py, mjcf_exporter.py
-  ui/                 # telemetry_panel, terminal_panel, joint_slider_panel, dialogs
-  demos/              # falling_block_demo, demo_control_script
+  scene.py            # Scene: robot + dt + snapshot/reset + step hooks (no FreeCAD)
+  ui/                 # telemetry, terminal, joint_slider, simulation panels + dialogs
+  demos/              # scene_template (editable), demo_control_script
   tests/              # headless unittest suite (no FreeCAD required)
 ```
 

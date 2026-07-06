@@ -35,12 +35,14 @@ class RoboticsSimWorkbench(_Base):
         self.appendMenu("RoboticsSim", names)
 
     def Activated(self):
-        """Open dock panels when switching to this workbench."""
+        """Open the dock panels (incl. Simulation Controls) on switching in."""
         try:
-            from .ui import telemetry_panel, terminal_panel
-            from .commands import _show_dock
-            _show_dock(telemetry_panel.get_panel(), "RoboticsSim Telemetry", area="left")
-            _show_dock(terminal_panel.get_panel(), "RoboticsSim Terminal", area="bottom")
+            from .ui import terminal_panel
+            from .commands import _open_simulation
+            # Open controls by default. create_doc=False: don't spawn an empty
+            # document just for switching workbenches; rebuild=False: reuse a
+            # scene already built for the open document (no duplicate geometry).
+            _open_simulation(rebuild=False, create_doc=False)
             terminal_panel.log("RoboticsSim workbench activated.")
         except Exception as exc:
             print("RoboticsSim activate error:", exc)

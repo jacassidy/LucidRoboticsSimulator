@@ -10,15 +10,16 @@ core (no FreeCAD):
   kinematics  <- link_model, joint_model, sensor_model
   {link,joint,sensor}_model <- document_model
   document_model, kinematics <- robot_api
-  robot_api <- simulation, script_runner
+  robot_api <- simulation, scene
+  robot_api <- script_runner
   document_model, kinematics <- exporters/{urdf,mjcf}
-  * <- demos/falling_block_demo (model half)
+  * <- demos/scene_template (model half)
 
 glue (guarded FreeCAD/Qt):
   core <- freecad_bridge
   core + ui + demos + freecad_bridge <- commands
   commands + ui <- workbench
-  ui/__init__ (Qt shim) <- ui/{telemetry,terminal,joint_slider}_panel, dialogs
+  ui/__init__ (Qt shim) <- ui/{telemetry,terminal,joint_slider,simulation}_panel, dialogs
 ```
 
 A core module importing a glue module is a bug.
@@ -34,13 +35,14 @@ A core module importing a glue module is a bug.
 | `document_model.py` | `RobotModel` (validation, JSON) + FreeCAD doc persistence |
 | `robot_api.py` | `Robot` runtime: FK cache, motors, sensors, `step`, logging, telemetry snapshot |
 | `simulation.py` | `GravityBody` physics hook + `run_headless` |
+| `scene.py` | `Scene` = robot + `dt` + snapshot/`reset` + `on_step` hooks (drives the controls panel) |
 | `script_runner.py` | `run_script(code, robot, log)` with stdout capture + error reporting |
 | `freecad_bridge.py` | Placement<->Transform, `GeometrySync`, `axis_from_selection`, per-doc `Robot` cache |
-| `commands.py` | 8 GUI commands + `register_commands()` + `_show_dock` |
-| `workbench.py` | `RoboticsSimWorkbench(Gui.Workbench)` |
+| `commands.py` | 7 GUI commands + `_open_simulation` + `register_commands()` + `_show_dock` |
+| `workbench.py` | `RoboticsSimWorkbench(Gui.Workbench)` (auto-opens Simulation Controls) |
 | `exporters/` | `export_urdf/write_urdf`, `export_mjcf/write_mjcf` |
-| `ui/` | Qt shim + 3 dock panels + dialogs; all no-op when `QT_AVAILABLE` is False |
-| `demos/` | falling-block demo + example control snippet |
+| `ui/` | Qt shim + 4 dock panels (telemetry, terminal, joint sliders, simulation) + dialogs |
+| `demos/` | `scene_template` (editable falling-block scene) + example control snippet |
 
 ## Runtime flow
 

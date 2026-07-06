@@ -39,8 +39,8 @@ programmable articulated robot model. Users can:
 ## Required Phase 1 features
 
 1. **Workbench** `RoboticsSimWorkbench` registering toolbar/menu commands:
-   Create Link, Create Joint, Edit Joint, Joint Sliders, Run Script, Export URDF,
-   Export MJCF, Run Demo. Python implementation preferred.
+   Create Link, Create Joint, Edit Joint, Joint Sliders, Simulation Controls,
+   Run Script, Export URDF, Export MJCF. Python implementation preferred.
 2. **Link system** — named rigid body from ≥1 selected FreeCAD objects; stores
    name, object refs, optional mass/inertia (placeholder defaults ok), visual +
    collision refs, world transform, parent/child joint refs. Renameable.

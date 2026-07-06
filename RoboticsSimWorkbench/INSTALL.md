@@ -66,8 +66,9 @@ Mod/RoboticsSimWorkbench/
 
 ## Verify
 
-- **RoboticsSim → Run Demo** should build a ground + block, drop it, and log
-  heights to the bottom terminal while telemetry updates on the left.
+- **RoboticsSim → Simulation Controls** (opens automatically) should build a
+  ground + block. Press **Play** to drop the block; heights log to the bottom
+  terminal while telemetry updates on the left. **Reset** returns it to the top.
 - The headless test suite should pass without FreeCAD:
 
   ```bash

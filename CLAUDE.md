@@ -20,12 +20,12 @@ plain CPython so they stay unit-testable headless:
 
 - `robotics_sim/kinematics.py`, `link_model.py`, `joint_model.py`,
   `sensor_model.py`, `document_model.py` (data half), `robot_api.py`,
-  `simulation.py`, `script_runner.py`, `exporters/*`.
+  `simulation.py`, `scene.py`, `script_runner.py`, `exporters/*`.
 
 All FreeCAD / Qt access is isolated and **guarded** (try/except import) in:
 
 - `freecad_bridge.py`, `commands.py`, `workbench.py`, `ui/*`, and the FreeCAD
-  scene-building half of `demos/falling_block_demo.py`.
+  scene-building half of `demos/scene_template.py`.
 
 Never `import FreeCAD` at module top level in a core module. If you need it, add
 it behind a helper in `freecad_bridge.py`.

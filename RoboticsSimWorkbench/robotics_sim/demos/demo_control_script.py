@@ -1,11 +1,11 @@
 """Example control script for the RoboticsSim script panel.
 
-Paste this into the Run Script dialog (or Load File it) AFTER running the
-Falling Block demo so the ``block_distance`` sensor exists. The script runner
-injects a ``robot`` object into the namespace.
+Paste this into the Run Script dialog (or Load File it) AFTER opening the
+Simulation Controls panel so the ``block_distance`` sensor exists. The script
+runner injects a ``robot`` object into the namespace.
 
 You can also run this file directly in a headless Python to see the API in
-action (it builds the demo model itself in that case).
+action (it builds the scene model itself in that case).
 """
 
 # --- The snippet the workbench runs (robot is injected) --------------------
@@ -22,11 +22,11 @@ for i in range(100):
 
 def _run_standalone():
     """Headless demo of the same API, for `python demo_control_script.py`."""
-    from robotics_sim.demos.falling_block_demo import build_demo_model
+    from robotics_sim.demos.scene_template import build_model
     from robotics_sim.robot_api import Robot
     from robotics_sim.simulation import GravityBody
 
-    robot = Robot(build_demo_model())
+    robot = Robot(build_model())
     GravityBody(robot, "block").attach()
     for _ in range(100):
         robot.step(0.01)

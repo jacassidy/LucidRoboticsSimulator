@@ -13,18 +13,16 @@ where useful, message boxes.
 from __future__ import annotations
 
 import os
-import time
 
 from . import freecad_bridge as bridge
-from .demos import falling_block_demo as demo_module
 from .document_model import DuplicateNameError
 from .joint_model import Joint
 from .kinematics import Transform
 from .link_model import Link
 from .exporters import write_urdf, write_mjcf
 from .script_runner import run_script
-from .ui import terminal_panel, telemetry_panel, joint_slider_panel, dialogs
-from .demos.falling_block_demo import run_falling_block_demo
+from .ui import terminal_panel, telemetry_panel, joint_slider_panel, simulation_panel, dialogs
+from .demos import scene_template
 from .demos.demo_control_script import CONTROL_SNIPPET
 
 ICON_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "icons")
@@ -45,27 +43,6 @@ def _require_doc():
         dialogs.error_box("RoboticsSim", "No FreeCAD document is open.")
         _log("[error] No document open.")
     return doc
-
-
-def _qt_app():
-    """The running QApplication, or None headless. Used to pump the event loop
-    so the 3D view repaints between sim steps."""
-    try:
-        from PySide2 import QtWidgets
-        return QtWidgets.QApplication.instance()
-    except Exception:
-        try:
-            from PySide import QtGui
-            return QtGui.QApplication.instance()
-        except Exception:
-            return None
-
-
-def _sleep(seconds):
-    try:
-        time.sleep(seconds)
-    except Exception:
-        pass
 
 
 def _refresh_ui(robot):
@@ -289,70 +266,95 @@ class ExportMJCF(_Command):
         _export(self, write_mjcf, "MJCF", "*.xml")
 
 
-class RunDemo(_Command):
-    name = "RoboticsSim_RunDemo"
-    menu_text = "Run Demo"
-    tooltip = "Run the built-in falling block + distance sensor demo"
-    icon = "run_demo.svg"
+class SimulationControls(_Command):
+    name = "RoboticsSim_SimControls"
+    menu_text = "Simulation Controls"
+    tooltip = "Open play / pause / speed / reset controls for the scene"
+    icon = "sim_controls.svg"
+
+    # Can spin up its own scene, so it is active even before a document exists.
+    def IsActive(self):
+        return True
 
     def Activated(self):
-        fc = bridge.get_freecad()
-        if fc is None:
-            _log("[error] FreeCAD not available.")
-            return
-        doc = bridge.active_document() or fc.newDocument("RoboticsSimDemo")
-        _show_dock(terminal_panel.get_panel(), "RoboticsSim Terminal", area="bottom")
-        _show_dock(telemetry_panel.get_panel(), "RoboticsSim Telemetry", area="left")
+        # Explicit user click -> rebuild the scene from scene_template (picks up
+        # any edits the user made to that file).
+        _open_simulation(rebuild=True, create_doc=True)
 
-        # Build scene + model FIRST, then bind GeometrySync/Robot to that model.
-        # (Building sync against the loaded doc model left it with no "block" link,
-        #  so geometry never synced and the block appeared frozen in the air.)
-        block_obj = demo_module.build_scene(doc)
-        model = demo_module.build_demo_model(
-            block_obj.Name if block_obj is not None else "DemoBlock"
-        )
-        sync = bridge.GeometrySync(doc, model)
-        robot = bridge.Robot(model, geometry_sync=sync)
-        bridge._RUNTIMES[doc.Name] = robot
 
+# Cached scene per document so re-opening the panel / switching workbenches does
+# not spawn duplicate geometry or reset a running sim.
+_SCENES = {}
+
+
+def _tee_terminal(robot):
+    """Mirror robot.log(...) into the terminal panel, exactly once per robot."""
+    if getattr(robot, "_terminal_teed", False):
+        return
+    robot.log_listeners.append(lambda v: _log(_fmt_log(v)))
+    robot._terminal_teed = True
+
+
+def _make_redraw(doc):
+    gui = bridge.get_gui()
+
+    def redraw():
         try:
-            fc.Gui.SendMsgToActiveView("ViewFit")
+            doc.recompute()
         except Exception:
             pass
-
-        gui = bridge.get_gui()
-        qt = _qt_app()
-
-        def on_step(_robot, _row):
-            # Redraw the 3D view and pace to wall-clock so the fall is visible.
+        if gui is not None:
             try:
-                doc.recompute()
+                gui.updateGui()
             except Exception:
                 pass
-            if qt is not None:
-                try:
-                    qt.processEvents()
-                except Exception:
-                    pass
-            if gui is not None:
-                try:
-                    gui.updateGui()
-                except Exception:
-                    pass
-            _sleep(0.01)
 
-        # robot/doc already prepared -> pass robot, doc=None so the scene is not
-        # rebuilt; step in real time via on_step.
-        robot, rows = run_falling_block_demo(
-            steps=300, dt=0.01, doc=None, log=_log, robot=robot, on_step=on_step,
+    return redraw
+
+
+def _open_simulation(rebuild=False, create_doc=True):
+    """Open the Simulation Controls panel bound to the document's scene.
+
+    ``rebuild`` forces a fresh scene from scene_template; otherwise a cached
+    scene is reused. ``create_doc`` allows creating an empty document when none
+    is open (True for the toolbar command, False for workbench auto-open).
+    """
+    fc = bridge.get_freecad()
+    if fc is None:
+        _log("[error] FreeCAD not available.")
+        return
+
+    _show_dock(terminal_panel.get_panel(), "RoboticsSim Terminal", area="bottom")
+    _show_dock(telemetry_panel.get_panel(), "RoboticsSim Telemetry", area="left")
+    panel = simulation_panel.get_panel()
+
+    doc = bridge.active_document()
+    if doc is None and create_doc:
+        doc = fc.newDocument("RoboticsSimScene")
+    if doc is None:
+        # No document to build against — just surface the (empty) controls.
+        _show_dock(panel, "Simulation Controls", area="right")
+        return
+
+    scene = _SCENES.get(doc.Name)
+    if scene is None or rebuild:
+        scene = scene_template.build(
+            doc=doc,
+            geometry_sync_factory=lambda model: bridge.GeometrySync(doc, model),
         )
-        bridge.save_robot(doc)
-        _refresh_ui(robot)
-        _log("[ok] Demo complete: %d steps logged." % len(rows))
-        try:
-            fc.Gui.SendMsgToActiveView("ViewFit")
-        except Exception:
-            pass
+        _SCENES[doc.Name] = scene
+        bridge._RUNTIMES[doc.Name] = scene.robot
+        _tee_terminal(scene.robot)
+        _log("[ok] Scene %r built. Press Play." % scene.name)
+
+    try:
+        fc.Gui.SendMsgToActiveView("ViewFit")
+    except Exception:
+        pass
+
+    panel.bind(scene, redraw=_make_redraw(doc))
+    _show_dock(panel, "Simulation Controls", area="right")
+    _refresh_ui(scene.robot)
 
 
 # ---- helpers -----------------------------------------------------------
@@ -418,7 +420,7 @@ def _show_dock(widget, title, area="right"):
 # Ordered list used by the workbench + registration.
 ALL_COMMANDS = [
     CreateLink, CreateJoint, EditJoint, JointSliders,
-    RunScript, ExportURDF, ExportMJCF, RunDemo,
+    SimulationControls, RunScript, ExportURDF, ExportMJCF,
 ]
 
 
